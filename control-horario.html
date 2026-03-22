@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>EUROLAB · Control Horario</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #181c27;
+    --surface2: #1f2433;
+    --border: rgba(255,255,255,0.07);
+    --accent: #3b7fff;
+    --accent2: #22c55e;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+    --text: #e8eaf0;
+    --text2: #8b91a8;
+    --text3: #555d78;
+    --radius: 12px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.4);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  /* ── HEADER ── */
+  header {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(15,17,23,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo-icon {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 600; color: #fff;
+  }
+  .logo-text { font-size: 13px; font-weight: 500; color: var(--text2); letter-spacing: 0.02em; }
+  .logo-text strong { color: var(--text); font-weight: 600; }
+
+  .user-pill {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 20px; padding: 6px 12px 6px 8px;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .user-pill:hover { border-color: var(--accent); }
+  .user-avatar {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--accent); display: flex; align-items: center;
+    justify-content: center; font-size: 10px; font-weight: 600; color: #fff;
+  }
+  .user-name { font-size: 12px; font-weight: 500; color: var(--text2); max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* ── LOGIN SCREEN ── */
+  #loginScreen {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+  }
+  .login-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 40px 32px;
+    max-width: 380px; width: 100%;
+    text-align: center;
+    box-shadow: var(--shadow);
+  }
+  .login-badge {
+    width: 64px; height: 64px; border-radius: 16px;
+    background: linear-gradient(135deg, var(--accent), #6366f1);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; margin: 0 auto 24px;
+    box-shadow: 0 8px 32px rgba(59,127,255,0.3);
+  }
+  .login-card h1 { font-size: 22px; font-weight: 600; margin-bottom: 8px; }
+  .login-card p { font-size: 14px; color: var(--text2); margin-bottom: 32px; line-height: 1.6; }
+
+  .btn-ms {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    width: 100%; padding: 14px 20px;
+    background: var(--accent); color: #fff;
+    border: none; border-radius: var(--radius);
+    font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500;
+    cursor: pointer; transition: all 0.2s;
+    box-shadow: 0 4px 16px rgba(59,127,255,0.3);
+  }
+  .btn-ms:hover { background: #2d6ef0; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(59,127,255,0.4); }
+  .btn-ms:active { transform: translateY(0); }
+  .btn-ms svg { flex-shrink: 0; }
+
+  /* ── MAIN APP ── */
+  #app { display: none; padding: 20px; max-width: 600px; margin: 0 auto; }
+
+  /* ── STATUS CARD ── */
+  .status-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 24px;
+    margin-bottom: 16px;
+    position: relative; overflow: hidden;
+  }
+  .status-card::before {
+    content: ''; position: absolute;
+    top: 0; left: 0; right: 0; height: 3px;
+    background: var(--accent);
+    transition: background 0.3s;
+  }
+  .status-card.checked-in::before { background: var(--accent2); }
+  .status-card.checked-out::before { background: var(--text3); }
+
+  .status-label { font-size: 11px; font-weight: 500; color: var(--text3); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px; }
+  .status-value { font-size: 28px; font-weight: 600; margin-bottom: 4px; }
+  .status-sub { font-size: 13px; color: var(--text2); }
+
+  .clock {
+    font-family: 'DM Mono', monospace;
+    font-size: 42px; font-weight: 500;
+    color: var(--text); letter-spacing: -1px;
+    margin: 16px 0 4px;
+  }
+  .date-str { font-size: 14px; color: var(--text2); }
+
+  /* ── FICHAR BUTTON ── */
+  .btn-fichar {
+    width: 100%; padding: 18px;
+    border: none; border-radius: var(--radius);
+    font-family: 'DM Sans', sans-serif; font-size: 16px; font-weight: 600;
+    cursor: pointer; transition: all 0.25s;
+    margin-top: 20px;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn-fichar.entrada {
+    background: var(--accent2);
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(34,197,94,0.3);
+  }
+  .btn-fichar.entrada:hover { background: #16a34a; transform: translateY(-1px); }
+  .btn-fichar.salida {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-fichar.salida:hover { border-color: var(--danger); color: var(--danger); }
+  .btn-fichar:active { transform: translateY(0) scale(0.99); }
+  .btn-fichar:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  /* ── INCIDENCIA ── */
+  .incidencia-row {
+    display: flex; gap: 8px; margin-top: 10px;
+  }
+  .input-obs {
+    flex: 1; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 14px;
+    color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px;
+    outline: none; transition: border 0.2s;
+  }
+  .input-obs:focus { border-color: var(--accent); }
+  .input-obs::placeholder { color: var(--text3); }
+
+  /* ── HISTORIAL ── */
+  .section-title {
+    font-size: 11px; font-weight: 500; color: var(--text3);
+    letter-spacing: 0.08em; text-transform: uppercase;
+    margin: 24px 0 12px;
+  }
+
+  .registro {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-bottom: 8px;
+    display: grid; grid-template-columns: auto 1fr auto;
+    gap: 12px; align-items: center;
+    transition: border-color 0.2s;
+  }
+  .registro:hover { border-color: rgba(255,255,255,0.12); }
+
+  .reg-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent2); flex-shrink: 0;
+  }
+  .reg-dot.salida { background: var(--text3); }
+  .reg-dot.incidencia { background: var(--warning); }
+
+  .reg-info {}
+  .reg-tipo { font-size: 13px; font-weight: 500; }
+  .reg-obs { font-size: 12px; color: var(--text2); margin-top: 2px; }
+  .reg-sync {
+    font-size: 11px; color: var(--text3);
+    display: flex; align-items: center; gap: 4px;
+  }
+  .reg-sync.synced { color: var(--accent2); }
+  .reg-sync.pending { color: var(--warning); }
+  .reg-time {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px; color: var(--text2);
+    text-align: right;
+  }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 20px;
+    font-size: 14px; font-weight: 500;
+    box-shadow: var(--shadow); z-index: 999;
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    white-space: nowrap; max-width: 90vw;
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+  #toast.success { border-color: var(--accent2); color: var(--accent2); }
+  #toast.error { border-color: var(--danger); color: var(--danger); }
+  #toast.info { border-color: var(--accent); color: var(--accent); }
+
+  /* ── SPINNER ── */
+  .spinner {
+    width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.2);
+    border-top-color: #fff; border-radius: 50%;
+    animation: spin 0.7s linear infinite; display: inline-block;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── ADMIN PANEL ── */
+  .admin-toggle {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); cursor: pointer;
+    margin-bottom: 8px; transition: border-color 0.2s;
+  }
+  .admin-toggle:hover { border-color: rgba(255,255,255,0.15); }
+  .admin-toggle span { font-size: 13px; font-weight: 500; color: var(--text2); }
+
+  .tabs {
+    display: flex; gap: 4px;
+    background: var(--surface2); border-radius: 10px; padding: 4px;
+    margin-bottom: 16px;
+  }
+  .tab {
+    flex: 1; padding: 8px; text-align: center;
+    font-size: 13px; font-weight: 500; color: var(--text2);
+    border-radius: 7px; cursor: pointer; transition: all 0.2s;
+    border: none; background: none; font-family: 'DM Sans', sans-serif;
+  }
+  .tab.active { background: var(--surface); color: var(--text); box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .stat-box {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px;
+  }
+  .stat-box .val { font-size: 24px; font-weight: 600; }
+  .stat-box .lbl { font-size: 11px; color: var(--text3); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.06em; }
+
+  .btn-export {
+    width: 100%; padding: 12px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius); color: var(--text2);
+    font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500;
+    cursor: pointer; transition: all 0.2s; margin-top: 8px;
+  }
+  .btn-export:hover { border-color: var(--accent); color: var(--accent); }
+
+  .empty-state {
+    text-align: center; padding: 32px 20px;
+    color: var(--text3); font-size: 14px;
+  }
+  .empty-icon { font-size: 32px; margin-bottom: 12px; }
+
+  @media (max-width: 400px) {
+    .clock { font-size: 36px; }
+    header { padding: 12px 16px; }
+    #app { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══ CONFIG ═══ -->
+<script>
+const CONFIG = {
+  clientId:   '5d42da2f-3a1b-490a-a2dd-c8b444cc9976',
+  tenantId:   '94907aa5-b4a5-4d69-a7b0-78c50cfde82a',
+  siteUrl:    'https://eurolabcsp.sharepoint.com/sites/Control_horario',
+  listName:   'RegistroHorario',
+  redirectUri: window.location.href.split('?')[0].split('#')[0],
+  scopes:     ['https://graph.microsoft.com/Sites.ReadWrite.All', 'https://graph.microsoft.com/User.Read']
+};
+</script>
+
+<!-- ═══ HEADER ═══ -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">EL</div>
+    <div class="logo-text"><strong>EUROLAB</strong> · Horario</div>
+  </div>
+  <div id="userPill" class="user-pill" style="display:none" onclick="logout()">
+    <div class="user-avatar" id="userInitial">?</div>
+    <span class="user-name" id="userName">—</span>
+  </div>
+</header>
+
+<!-- ═══ LOGIN ═══ -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-badge">⏱</div>
+    <h1>Control Horario</h1>
+    <p>Accede con tu cuenta corporativa de EUROLAB para registrar tu jornada laboral.</p>
+    <button class="btn-ms" onclick="login()">
+      <svg width="18" height="18" viewBox="0 0 21 21" fill="none">
+        <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
+        <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+        <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
+        <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+      </svg>
+      Iniciar sesión con Microsoft
+    </button>
+  </div>
+</div>
+
+<!-- ═══ APP ═══ -->
+<div id="app">
+
+  <!-- Clock -->
+  <div class="status-card" id="clockCard">
+    <div class="status-label">Fecha y hora actual</div>
+    <div class="clock" id="clock">--:--:--</div>
+    <div class="date-str" id="dateStr">—</div>
+  </div>
+
+  <!-- Estado turno -->
+  <div class="status-card" id="estadoCard">
+    <div class="status-label">Estado del turno</div>
+    <div class="status-value" id="estadoValor">—</div>
+    <div class="status-sub" id="estadoSub">Cargando...</div>
+  </div>
+
+  <!-- Observación -->
+  <div class="incidencia-row">
+    <input class="input-obs" id="obsInput" type="text" placeholder="Observación (opcional)..." maxlength="200">
+  </div>
+
+  <!-- Botón fichar -->
+  <button class="btn-fichar entrada" id="btnFichar" onclick="fichar()" disabled>
+    <span class="spinner" id="btnSpinner" style="display:none"></span>
+    <span id="btnText">Cargando...</span>
+  </button>
+
+  <!-- Historial del día -->
+  <div class="section-title">Hoy</div>
+  <div id="historialHoy"></div>
+
+  <!-- Admin -->
+  <div class="admin-toggle" id="adminToggle" onclick="toggleAdmin()" style="display:none">
+    <span>📊 Panel de administración</span>
+    <span id="adminArrow">▼</span>
+  </div>
+  <div id="adminPanel" style="display:none">
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('resumen')">Resumen</button>
+      <button class="tab" onclick="switchTab('todos')">Todos los registros</button>
+    </div>
+    <div id="tabResumen">
+      <div class="stat-grid" id="statsGrid"></div>
+      <button class="btn-export" onclick="exportCSV()">⬇ Exportar CSV del mes</button>
+    </div>
+    <div id="tabTodos" style="display:none">
+      <div id="todosRegistros"></div>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<!-- ═══ SCRIPT ═══ -->
+<script>
+// ── Estado global
+let accessToken = null;
+let currentUser = null;
+let siteId      = null;
+let listId      = null;
+let estadoActual = null; // 'libre' | 'trabajando'
+let registrosHoy = [];
+let isAdmin = false;
+let adminVisible = false;
+
+// ═══════════════════════════════
+// PKCE HELPERS
+// ═══════════════════════════════
+function base64url(buf) {
+  return btoa(String.fromCharCode(...new Uint8Array(buf)))
+    .replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+}
+async function generatePKCE() {
+  const verifier = base64url(crypto.getRandomValues(new Uint8Array(32)));
+  const hashed   = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
+  const challenge = base64url(hashed);
+  return { verifier, challenge };
+}
+
+// ═══════════════════════════════
+// AUTH
+// ═══════════════════════════════
+async function login() {
+  const { verifier, challenge } = await generatePKCE();
+  sessionStorage.setItem('pkce_verifier', verifier);
+  const state = Math.random().toString(36).slice(2);
+  sessionStorage.setItem('oauth_state', state);
+
+  const params = new URLSearchParams({
+    client_id:             CONFIG.clientId,
+    response_type:         'code',
+    redirect_uri:          CONFIG.redirectUri,
+    scope:                 CONFIG.scopes.join(' ') + ' offline_access openid profile',
+    code_challenge:        challenge,
+    code_challenge_method: 'S256',
+    state,
+    response_mode:         'query'
+  });
+  window.location.href = `https://login.microsoftonline.com/${CONFIG.tenantId}/oauth2/v2.0/authorize?${params}`;
+}
+
+async function exchangeCode(code) {
+  const verifier = sessionStorage.getItem('pkce_verifier');
+  const body = new URLSearchParams({
+    client_id:     CONFIG.clientId,
+    grant_type:    'authorization_code',
+    code,
+    redirect_uri:  CONFIG.redirectUri,
+    code_verifier: verifier,
+    scope:         CONFIG.scopes.join(' ') + ' offline_access openid profile'
+  });
+  const r = await fetch(`https://login.microsoftonline.com/${CONFIG.tenantId}/oauth2/v2.0/token`, {
+    method: 'POST',
+    headers: {'Content-Type':'application/x-www-form-urlencoded'},
+    body
+  });
+  if (!r.ok) throw new Error('Token exchange failed');
+  const data = await r.json();
+  accessToken = data.access_token;
+  if (data.refresh_token) localStorage.setItem('refresh_token', data.refresh_token);
+  localStorage.setItem('access_token', data.access_token);
+  localStorage.setItem('token_exp', Date.now() + (data.expires_in - 60)*1000);
+}
+
+async function refreshToken() {
+  const rt = localStorage.getItem('refresh_token');
+  if (!rt) return false;
+  try {
+    const body = new URLSearchParams({
+      client_id:     CONFIG.clientId,
+      grant_type:    'refresh_token',
+      refresh_token: rt,
+      scope:         CONFIG.scopes.join(' ') + ' offline_access openid profile'
+    });
+    const r = await fetch(`https://login.microsoftonline.com/${CONFIG.tenantId}/oauth2/v2.0/token`, {
+      method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body
+    });
+    if (!r.ok) return false;
+    const data = await r.json();
+    accessToken = data.access_token;
+    localStorage.setItem('access_token', data.access_token);
+    localStorage.setItem('token_exp', Date.now() + (data.expires_in - 60)*1000);
+    if (data.refresh_token) localStorage.setItem('refresh_token', data.refresh_token);
+    return true;
+  } catch { return false; }
+}
+
+async function ensureToken() {
+  const exp = parseInt(localStorage.getItem('token_exp') || '0');
+  if (Date.now() < exp && accessToken) return true;
+  accessToken = localStorage.getItem('access_token');
+  if (accessToken && Date.now() < exp) return true;
+  return await refreshToken();
+}
+
+function logout() {
+  localStorage.clear(); sessionStorage.clear();
+  window.location.href = `https://login.microsoftonline.com/${CONFIG.tenantId}/oauth2/v2.0/logout?post_logout_redirect_uri=${encodeURIComponent(CONFIG.redirectUri)}`;
+}
+
+// ═══════════════════════════════
+// GRAPH API
+// ═══════════════════════════════
+async function graph(path, opts={}) {
+  await ensureToken();
+  const r = await fetch('https://graph.microsoft.com/v1.0' + path, {
+    ...opts,
+    headers: {
+      'Authorization': 'Bearer ' + accessToken,
+      'Content-Type': 'application/json',
+      ...(opts.headers||{})
+    }
+  });
+  if (!r.ok) {
+    const err = await r.json().catch(()=>({}));
+    throw new Error(err.error?.message || `Graph error ${r.status}`);
+  }
+  if (r.status === 204) return null;
+  return r.json();
+}
+
+async function initSharePoint() {
+  // Obtener siteId
+  const encoded = encodeURIComponent('eurolabcsp.sharepoint.com:/sites/Control_horario:');
+  const site = await graph(`/sites/eurolabcsp.sharepoint.com:/sites/Control_horario:`);
+  siteId = site.id;
+
+  // Buscar o crear lista
+  const lists = await graph(`/sites/${siteId}/lists?$filter=displayName eq '${CONFIG.listName}'`);
+  if (lists.value.length > 0) {
+    listId = lists.value[0].id;
+  } else {
+    const newList = await graph(`/sites/${siteId}/lists`, {
+      method: 'POST',
+      body: JSON.stringify({
+        displayName: CONFIG.listName,
+        columns: [
+          { name: 'Usuario',      text: {} },
+          { name: 'Email',        text: {} },
+          { name: 'Tipo',         text: {} },  // ENTRADA | SALIDA | INCIDENCIA
+          { name: 'Timestamp',    dateTime: { displayAs: 'default' } },
+          { name: 'Observacion',  text: {} },
+          { name: 'Dispositivo',  text: {} }
+        ],
+        list: { template: 'genericList' }
+      })
+    });
+    listId = newList.id;
+  }
+}
+
+async function crearRegistro(tipo, obs='') {
+  const now = new Date();
+  return graph(`/sites/${siteId}/lists/${listId}/items`, {
+    method: 'POST',
+    body: JSON.stringify({
+      fields: {
+        Usuario:     currentUser.displayName,
+        Email:       currentUser.mail || currentUser.userPrincipalName,
+        Tipo:        tipo,
+        Timestamp:   now.toISOString(),
+        Observacion: obs,
+        Dispositivo: navigator.userAgent.substring(0,100)
+      }
+    })
+  });
+}
+
+async function obtenerRegistrosHoy(email) {
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const iso = hoy.toISOString();
+  const filter = encodeURIComponent(`fields/Email eq '${email}' and fields/Timestamp ge '${iso}'`);
+  const r = await graph(`/sites/${siteId}/lists/${listId}/items?$filter=${filter}&$orderby=fields/Timestamp asc&$top=50&expand=fields`);
+  return r.value || [];
+}
+
+async function obtenerTodosRegistros() {
+  const r = await graph(`/sites/${siteId}/lists/${listId}/items?$orderby=fields/Timestamp desc&$top=200&expand=fields`);
+  return r.value || [];
+}
+
+// ═══════════════════════════════
+// UI
+// ═══════════════════════════════
+function showToast(msg, type='info', ms=3000) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = `show ${type}`;
+  setTimeout(()=>{ t.className=''; }, ms);
+}
+
+function tick() {
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    now.toLocaleTimeString('es-ES', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  document.getElementById('dateStr').textContent =
+    now.toLocaleDateString('es-ES', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+}
+
+function renderEstado() {
+  const card  = document.getElementById('estadoCard');
+  const valor = document.getElementById('estadoValor');
+  const sub   = document.getElementById('estadoSub');
+  const btn   = document.getElementById('btnFichar');
+  const txt   = document.getElementById('btnText');
+
+  if (estadoActual === 'trabajando') {
+    card.className = 'status-card checked-in';
+    valor.textContent = '🟢 En jornada';
+    const ult = registrosHoy.filter(r=>r.fields.Tipo==='ENTRADA').pop();
+    sub.textContent = ult ? `Desde ${new Date(ult.fields.Timestamp).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})}` : '';
+    btn.className = 'btn-fichar salida'; txt.textContent = 'Registrar salida';
+  } else {
+    card.className = 'status-card checked-out';
+    valor.textContent = registrosHoy.length ? '⚫ Jornada finalizada' : '⚪ Sin fichar';
+    sub.textContent = registrosHoy.length ? 'Puedes registrar nueva entrada si es necesario' : 'Pulsa el botón para iniciar tu jornada';
+    btn.className = 'btn-fichar entrada'; txt.textContent = 'Registrar entrada';
+  }
+  btn.disabled = false;
+}
+
+function renderHistorial() {
+  const el = document.getElementById('historialHoy');
+  if (!registrosHoy.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div>Sin registros hoy</div>';
+    return;
+  }
+  el.innerHTML = registrosHoy.slice().reverse().map(r => {
+    const f = r.fields;
+    const hora = new Date(f.Timestamp).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+    const tipo = f.Tipo === 'ENTRADA' ? 'Entrada' : f.Tipo === 'SALIDA' ? 'Salida' : 'Incidencia';
+    const dotClass = f.Tipo === 'ENTRADA' ? '' : f.Tipo === 'SALIDA' ? 'salida' : 'incidencia';
+    return `
+    <div class="registro">
+      <div class="reg-dot ${dotClass}"></div>
+      <div class="reg-info">
+        <div class="reg-tipo">${tipo}</div>
+        ${f.Observacion ? `<div class="reg-obs">${f.Observacion}</div>` : ''}
+      </div>
+      <div class="reg-time">${hora}<br><span class="reg-sync synced" style="font-size:10px">✓ sync</span></div>
+    </div>`;
+  }).join('');
+}
+
+function calcularEstado() {
+  let dentro = false;
+  for (const r of registrosHoy) {
+    if (r.fields.Tipo === 'ENTRADA') dentro = true;
+    if (r.fields.Tipo === 'SALIDA')  dentro = false;
+  }
+  estadoActual = dentro ? 'trabajando' : 'libre';
+}
+
+async function fichar() {
+  const btn = document.getElementById('btnFichar');
+  const spinner = document.getElementById('btnSpinner');
+  const txt = document.getElementById('btnText');
+  const obs = document.getElementById('obsInput').value.trim();
+
+  btn.disabled = true;
+  spinner.style.display = 'inline-block';
+  txt.textContent = 'Registrando...';
+
+  try {
+    const tipo = estadoActual === 'trabajando' ? 'SALIDA' : 'ENTRADA';
+    await crearRegistro(tipo, obs);
+    document.getElementById('obsInput').value = '';
+
+    // Recargar
+    registrosHoy = await obtenerRegistrosHoy(currentUser.mail || currentUser.userPrincipalName);
+    calcularEstado();
+    renderEstado();
+    renderHistorial();
+    showToast(tipo === 'ENTRADA' ? '✅ Entrada registrada' : '✅ Salida registrada', 'success');
+  } catch(e) {
+    showToast('Error al registrar: ' + e.message, 'error', 5000);
+    renderEstado();
+  }
+}
+
+// ── ADMIN
+function toggleAdmin() {
+  adminVisible = !adminVisible;
+  document.getElementById('adminPanel').style.display = adminVisible ? 'block' : 'none';
+  document.getElementById('adminArrow').textContent = adminVisible ? '▲' : '▼';
+  if (adminVisible) loadAdmin();
+}
+
+let currentTab = 'resumen';
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach((t,i)=>{
+    t.className = 'tab' + ((['resumen','todos'][i]===tab)?' active':'');
+  });
+  document.getElementById('tabResumen').style.display = tab==='resumen'?'block':'none';
+  document.getElementById('tabTodos').style.display   = tab==='todos'?'block':'none';
+  if (tab==='todos') loadTodos();
+}
+
+async function loadAdmin() {
+  try {
+    const todos = await obtenerTodosRegistros();
+    // Stats del mes
+    const mesActual = new Date().getMonth();
+    const mesR = todos.filter(r=>new Date(r.fields.Timestamp).getMonth()===mesActual);
+    const usuarios = [...new Set(mesR.map(r=>r.fields.Email))];
+    const entradas = mesR.filter(r=>r.fields.Tipo==='ENTRADA').length;
+    document.getElementById('statsGrid').innerHTML = `
+      <div class="stat-box"><div class="val">${usuarios.length}</div><div class="lbl">Empleados activos</div></div>
+      <div class="stat-box"><div class="val">${entradas}</div><div class="lbl">Entradas este mes</div></div>
+      <div class="stat-box"><div class="val">${mesR.filter(r=>r.fields.Tipo==='SALIDA').length}</div><div class="lbl">Salidas este mes</div></div>
+      <div class="stat-box"><div class="val">${mesR.filter(r=>r.fields.Observacion).length}</div><div class="lbl">Con observación</div></div>
+    `;
+  } catch(e) { showToast('Error cargando stats', 'error'); }
+}
+
+async function loadTodos() {
+  const el = document.getElementById('todosRegistros');
+  el.innerHTML = '<div class="empty-state">Cargando...</div>';
+  try {
+    const todos = await obtenerTodosRegistros();
+    if (!todos.length) { el.innerHTML='<div class="empty-state"><div class="empty-icon">📭</div>Sin registros</div>'; return; }
+    el.innerHTML = todos.map(r=>{
+      const f = r.fields;
+      const dt = new Date(f.Timestamp);
+      const fecha = dt.toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit'});
+      const hora  = dt.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+      const dotClass = f.Tipo==='ENTRADA'?'':'salida';
+      return `
+      <div class="registro">
+        <div class="reg-dot ${dotClass}"></div>
+        <div class="reg-info">
+          <div class="reg-tipo">${f.Usuario} · ${f.Tipo}</div>
+          ${f.Observacion?`<div class="reg-obs">${f.Observacion}</div>`:''}
+        </div>
+        <div class="reg-time">${hora}<br><span style="font-size:10px;color:var(--text3)">${fecha}</span></div>
+      </div>`;
+    }).join('');
+  } catch(e) { el.innerHTML='<div class="empty-state">Error cargando registros</div>'; }
+}
+
+async function exportCSV() {
+  showToast('Preparando CSV...', 'info');
+  try {
+    const todos = await obtenerTodosRegistros();
+    const mes = new Date().getMonth();
+    const mesR = todos.filter(r=>new Date(r.fields.Timestamp).getMonth()===mes);
+    const csv = ['Usuario,Email,Tipo,Fecha,Hora,Observacion',
+      ...mesR.map(r=>{
+        const f=r.fields; const dt=new Date(f.Timestamp);
+        return `"${f.Usuario}","${f.Email}","${f.Tipo}","${dt.toLocaleDateString('es-ES')}","${dt.toLocaleTimeString('es-ES')}","${f.Observacion||''}"`;
+      })
+    ].join('\n');
+    const a=document.createElement('a');
+    a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
+    a.download=`horario_${new Date().toISOString().slice(0,7)}.csv`;
+    a.click();
+    showToast('✅ CSV descargado', 'success');
+  } catch(e) { showToast('Error exportando', 'error'); }
+}
+
+// ═══════════════════════════════
+// INIT
+// ═══════════════════════════════
+async function init() {
+  setInterval(tick, 1000); tick();
+
+  // Manejar redirect OAuth2
+  const params = new URLSearchParams(window.location.search);
+  const code  = params.get('code');
+  const state = params.get('state');
+
+  if (code) {
+    if (state !== sessionStorage.getItem('oauth_state')) {
+      showToast('Error de seguridad en autenticación', 'error'); return;
+    }
+    try {
+      await exchangeCode(code);
+      // Limpiar URL
+      window.history.replaceState({}, '', window.location.pathname);
+    } catch(e) {
+      showToast('Error de autenticación: ' + e.message, 'error'); return;
+    }
+  }
+
+  // Verificar token
+  const ok = await ensureToken();
+  if (!ok) return; // Mostrar login
+
+  // Mostrar app
+  try {
+    currentUser = await graph('/me');
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('userPill').style.display = 'flex';
+    document.getElementById('userName').textContent = currentUser.displayName || currentUser.mail;
+    document.getElementById('userInitial').textContent = (currentUser.displayName||'U').charAt(0).toUpperCase();
+
+    // Comprobar si es admin (miembro de admins o rol específico)
+    try {
+      const roles = await graph('/me/memberOf?$select=displayName');
+      isAdmin = roles.value.some(g => /admin|rrhh|hr|direcci/i.test(g.displayName||''));
+    } catch { isAdmin = false; }
+    // Si es admin global de Entra (Javier), mostrar panel
+    const myRoles = await graph('/me/transitiveMemberOf/microsoft.graph.directoryRole?$select=displayName').catch(()=>({value:[]}));
+    if (myRoles.value?.some(r=>/admin/i.test(r.displayName||''))) isAdmin = true;
+
+    if (isAdmin) document.getElementById('adminToggle').style.display = 'flex';
+
+    // Inicializar SharePoint
+    showToast('Conectando con SharePoint...', 'info', 2000);
+    await initSharePoint();
+
+    // Cargar registros hoy
+    registrosHoy = await obtenerRegistrosHoy(currentUser.mail || currentUser.userPrincipalName);
+    calcularEstado();
+    renderEstado();
+    renderHistorial();
+
+  } catch(e) {
+    showToast('Error: ' + e.message, 'error', 6000);
+    console.error(e);
+  }
+}
+
+init();
+</script>
+</body>
+</html>
